@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="위도와 절기, 시각에 따른 태양 궤도를 계산해 처마의 차양 성능과 창으로 들어오는 일사량을 단면으로 보여주는 시뮬레이터.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="처마 일조 시뮬레이터">
+<meta property="og:description" content="태양 고도·방위각을 계산해 처마가 여름 햇빛을 얼마나 막고 겨울 햇빛을 얼마나 들이는지 보여줍니다.">
+<style>
+  :root{color-scheme:light dark; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);}
+  body{margin:0; font-size:14px;}
+  img{max-width:100%;}
+  [hidden]{display:none!important;}
+</style>
+<title>처마 일조 시뮬레이터</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg:#EDF0F3; --panel:#FFFFFF; --panel-2:#F6F8FA; --sunk:#E9EDF1;
+    --ink:#16202B; --ink-2:#4B5B6B; --ink-3:#7C8B99;
+    --line:#D3DCE3; --line-2:#E6EBEF;
+    --sun:#C97A16; --sun-2:#E8A33D; --sun-soft:#F7DCA9;
+    --shade:#33506D; --shade-2:#8CA6BD;
+    --ok:#2C7355; --warn:#A4671B; --bad:#A93B2C;
+    --sky:#DCE6EC; --earth:#C4C8BC; --stone:#CFD3D6; --wood:#9A7752; --tile:#6C7683;
+    --glass:#C3DAE2;
+    --h0:#E3E8EC; --h1:#F8E5C3; --h2:#F2CE92; --h3:#E8B163; --h4:#DA913C; --h5:#BE7123; --h6:#9B5417;
+    --display:'Gowun Batang', 'Nanum Myeongjo', serif;
+    --ui:-apple-system, 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E141A; --panel:#161E25; --panel-2:#1B252E; --sunk:#111920;
+      --ink:#E6ECF1; --ink-2:#AAB9C5; --ink-3:#7A8996;
+      --line:#2A3540; --line-2:#212B34;
+      --sun:#F2B457; --sun-2:#F2B457; --sun-soft:#6B4E1C;
+      --shade:#7FA6C9; --shade-2:#3C566E;
+      --ok:#5FB58C; --warn:#D79A4A; --bad:#D9705E;
+      --sky:#18242D; --earth:#262B23; --stone:#2B333A; --wood:#6A5238; --tile:#39424C;
+      --glass:#294450;
+      --h0:#1D272F; --h1:#33301F; --h2:#4B4124; --h3:#6A5729; --h4:#8E712E; --h5:#B38C36; --h6:#D7A945;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E141A; --panel:#161E25; --panel-2:#1B252E; --sunk:#111920;
+    --ink:#E6ECF1; --ink-2:#AAB9C5; --ink-3:#7A8996;
+    --line:#2A3540; --line-2:#212B34;
+    --sun:#F2B457; --sun-2:#F2B457; --sun-soft:#6B4E1C;
+    --shade:#7FA6C9; --shade-2:#3C566E;
+    --ok:#5FB58C; --warn:#D79A4A; --bad:#D9705E;
+    --sky:#18242D; --earth:#262B23; --stone:#2B333A; --wood:#6A5238; --tile:#39424C;
+    --glass:#294450;
+    --h0:#1D272F; --h1:#33301F; --h2:#4B4124; --h3:#6A5729; --h4:#8E712E; --h5:#B38C36; --h6:#D7A945;
+  }
+
+  body{background:var(--bg); color:var(--ink); font-family:var(--ui); line-height:1.55;}
+  .wrap{max-width:1180px; margin:0 auto; padding-inline:16px; padding-block:28px 40px;}
+  h1,h2,h3{margin:0; font-family:var(--display); font-weight:700; text-wrap:balance;}
+  p{margin:0;}
+
+  .head{display:flex; flex-direction:column; gap:6px; margin-bottom:22px; max-width:66ch;}
+  .eyebrow{font-size:11px; letter-spacing:.16em; color:var(--ink-3); font-family:var(--mono);}
+  h1{font-size:clamp(26px,4.4vw,38px); letter-spacing:-.01em;}
+  .lede{color:var(--ink-2); font-size:14px;}
+
+  .grid{display:grid; grid-template-columns:minmax(0,1.62fr) minmax(280px,1fr); gap:16px; align-items:start;}
+  .side{display:flex; flex-direction:column; gap:16px;}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:4px;}
+  .stage{padding:14px 14px 16px; min-width:0;}
+  .stage-head{display:flex; flex-wrap:wrap; gap:8px 14px; align-items:baseline; justify-content:space-between; margin-bottom:8px;}
+  h2{font-size:15px; letter-spacing:.02em;}
+  .state{font-family:var(--mono); font-size:12px; color:var(--ink-2);}
+  #scene{display:block; width:100%; height:auto; background:var(--sunk); border-radius:3px;}
+
+  .metrics{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; margin-top:14px; background:var(--line-2); border:1px solid var(--line-2);}
+  .m{background:var(--panel); padding:9px 11px 10px; display:flex; flex-direction:column; gap:2px; min-width:0;}
+  .m .k{font-size:11px; color:var(--ink-3); letter-spacing:.04em;}
+  .m .v{font-family:var(--mono); font-size:19px; font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+  .m .v small{font-size:11px; color:var(--ink-3); margin-left:2px; letter-spacing:0;}
+  .m .n{font-size:11px; color:var(--ink-3);}
+  .m.compass{align-items:center; justify-content:center; padding:6px;}
+  .m.lit .v{color:var(--sun);} .m.shaded .v{color:var(--shade);}
+
+  .controls{padding:14px;}
+  .grp{border-top:1px solid var(--line-2); padding-top:11px; margin-top:11px;}
+  .grp:first-of-type{border-top:0; padding-top:8px; margin-top:6px;}
+  .grp-t{font-size:11px; letter-spacing:.14em; color:var(--ink-3); font-family:var(--mono); margin-bottom:8px;}
+  .row{display:flex; flex-direction:column; gap:3px; margin-bottom:11px;}
+  .row:last-child{margin-bottom:2px;}
+  .rl{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:12.5px;}
+  .rl b{font-weight:500; color:var(--ink-2);}
+  .rl span{font-family:var(--mono); font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--ink);}
+  input[type=range]{width:100%; accent-color:var(--sun); height:20px;}
+  select{width:100%; font:inherit; font-size:13px; padding:5px 7px; border:1px solid var(--line); border-radius:3px; background:var(--panel-2); color:var(--ink);}
+  .chips{display:flex; flex-wrap:wrap; gap:5px; margin-top:2px;}
+  button{font:inherit; font-size:12px; padding:4px 9px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink-2); border-radius:3px; cursor:pointer;}
+  button:hover{border-color:var(--sun); color:var(--sun);}
+  button.on{background:var(--sun); border-color:var(--sun); color:#fff;}
+  :focus-visible{outline:2px solid var(--sun); outline-offset:2px;}
+
+  .diag{padding:14px;}
+  .dlist{display:flex; flex-direction:column; gap:9px; margin-top:9px;}
+  .d{display:grid; grid-template-columns:8px 1fr auto; gap:9px; align-items:start; font-size:12.5px;}
+  .d i{width:8px; height:8px; border-radius:50%; margin-top:6px; background:var(--ink-3); font-style:normal;}
+  .d.ok i{background:var(--ok);} .d.warn i{background:var(--warn);} .d.bad i{background:var(--bad);}
+  .d .t{color:var(--ink-2);} .d .t b{color:var(--ink); font-weight:600;}
+  .d .q{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .rec{margin-top:12px; padding:10px 11px; background:var(--panel-2); border:1px solid var(--line-2); border-radius:3px; font-size:12.5px; color:var(--ink-2);}
+  .rec b{color:var(--ink); font-family:var(--mono);}
+  .rec .chips{margin-top:7px;}
+
+  .annual{grid-column:1/-1; padding:14px;}
+  .sub{font-size:12.5px; color:var(--ink-2); margin-top:3px;}
+  .chart-scroll{overflow-x:auto; margin-top:10px;}
+  #heat{display:block; width:100%; min-width:520px; height:auto;}
+  .read{font-family:var(--mono); font-size:12px; color:var(--ink-2); margin-top:6px; min-height:18px;}
+  #heat rect.cell{cursor:pointer;}
+  #heat rect.cell:hover{stroke:var(--ink); stroke-width:1.5;}
+
+  footer{margin-top:22px; padding-top:14px; border-top:1px solid var(--line); font-size:11.5px; color:var(--ink-3); max-width:80ch; display:flex; flex-direction:column; gap:5px;}
+  footer b{color:var(--ink-2); font-weight:500;}
+
+  @media (max-width:860px){
+    .grid{grid-template-columns:minmax(0,1fr);}
+    .metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
+  @media (prefers-reduced-motion: reduce){*{animation:none!important; transition:none!important;}}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow">한옥 차양 설계 · 태양궤도 계산</p>
+    <h1>처마 일조 시뮬레이터</h1>
+    <p class="lede">위도와 절기, 시각에 따른 태양의 고도·방위를 계산해 처마가 드리우는 그림자를 단면으로 그립니다. 창으로 실제 들어오는 일사량(W/m²)과 햇빛이 방 안으로 파고드는 깊이까지 함께 봅니다.</p>
+  </header>
+
+  <main class="grid">
+    <section class="stage panel">
+      <div class="stage-head">
+        <h2>단면 — 처마와 햇빛</h2>
+        <p class="state" id="stageState">—</p>
+      </div>
+      <svg id="scene" viewBox="0 0 900 480" role="img" aria-label="처마 단면과 태양광 입사 단면도"></svg>
+      <div class="metrics">
+        <div class="m compass"><svg id="compass" viewBox="0 0 96 96" width="88" height="88" aria-label="창 방위와 태양 방위"></svg></div>
+        <div class="m"><span class="k">태양 고도</span><span class="v" id="mAlt">—</span><span class="n" id="mAzi">—</span></div>
+        <div class="m"><span class="k">프로파일각 <small>(벽면 기준)</small></span><span class="v" id="mProf">—</span><span class="n">처마 그림자를 결정하는 각</span></div>
+        <div class="m shaded"><span class="k">창면 음영률</span><span class="v" id="mShade">—</span><span class="n" id="mShadeN">—</span></div>
+        <div class="m lit"><span class="k">실내 유입 깊이</span><span class="v" id="mPen">—</span><span class="n">창 아래 벽면부터 바닥 햇빛 끝까지</span></div>
+        <div class="m lit"><span class="k">창면 유입 일사</span><span class="v" id="mIrr">—</span><span class="n" id="mIrrN">—</span></div>
+        <div class="m"><span class="k">하루 유입량</span><span class="v" id="mDay">—</span><span class="n" id="mDayN">—</span></div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel controls">
+        <h2>설계 변수</h2>
+
+        <div class="grp">
+          <p class="grp-t">위치와 시간</p>
+          <div class="row">
+            <div class="rl"><b>지역</b></div>
+            <select id="city" aria-label="지역"></select>
+          </div>
+          <div class="row">
+            <div class="rl"><b>위도</b><span id="vLat">—</span></div>
+            <input type="range" id="lat" min="33" max="43" step="0.1" value="37.6">
+          </div>
+          <div class="row">
+            <div class="rl"><b>날짜</b><span id="vDoy">—</span></div>
+            <input type="range" id="doy" min="1" max="365" step="1" value="262">
+            <div class="chips">
+              <button type="button" data-doy="355">동지</button>
+              <button type="button" data-doy="80">춘분</button>
+              <button type="button" data-doy="172">하지</button>
+              <button type="button" data-doy="266">추분</button>
+              <button type="button" id="today">오늘</button>
+            </div>
+          </div>
+          <div class="row">
+            <div class="rl"><b>시각</b><span id="vHour">—</span></div>
+            <input type="range" id="hour" min="4" max="20" step="0.0833333" value="13">
+            <div class="chips">
+              <button type="button" id="noon">남중시각</button>
+              <button type="button" id="play">하루 재생</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grp">
+          <p class="grp-t">창의 방향</p>
+          <div class="row">
+            <div class="rl"><b>창이 바라보는 방위</b><span id="vAz">—</span></div>
+            <input type="range" id="wallAz" min="0" max="355" step="5" value="180">
+            <div class="chips">
+              <button type="button" data-az="180">정남</button>
+              <button type="button" data-az="135">남동</button>
+              <button type="button" data-az="225">남서</button>
+              <button type="button" data-az="90">정동</button>
+              <button type="button" data-az="270">정서</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grp">
+          <p class="grp-t">처마와 창 치수</p>
+          <div class="row">
+            <div class="rl"><b>처마 내밀기</b><span id="vD">—</span></div>
+            <input type="range" id="D" min="0" max="250" step="5" value="90">
+          </div>
+          <div class="row">
+            <div class="rl"><b>창 상단~처마 밑 높이</b><span id="vG">—</span></div>
+            <input type="range" id="g" min="0" max="150" step="5" value="30">
+          </div>
+          <div class="row">
+            <div class="rl"><b>창 높이</b><span id="vWh">—</span></div>
+            <input type="range" id="wh" min="60" max="240" step="5" value="150">
+          </div>
+          <div class="row">
+            <div class="rl"><b>창 하단 높이 (바닥 기준)</b><span id="vS">—</span></div>
+            <input type="range" id="s" min="0" max="150" step="5" value="45">
+          </div>
+        </div>
+      </section>
+
+      <section class="panel diag">
+        <h2>설계 진단</h2>
+        <div class="dlist" id="diag"></div>
+        <div class="rec" id="rec"></div>
+      </section>
+    </aside>
+
+    <section class="panel annual">
+      <h2>연간 일사 유입</h2>
+      <p class="sub">현재 처마·창 치수로 계산한 월별·시각별 창면 유입 일사량(W/m², 청천공 기준). 칸을 누르면 그 날짜·시각의 단면으로 이동합니다.</p>
+      <div class="chart-scroll"><svg id="heat" viewBox="0 0 660 366" role="img" aria-label="월별 시각별 창면 유입 일사량 히트맵"></svg></div>
+      <p class="read" id="heatRead">칸에 마우스를 올리면 값이 표시됩니다.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p><b>계산 근거</b> — 태양 적위는 Cooper 근사식, 시간은 균시차와 경도 보정을 적용한 진태양시 기준입니다. 일사량은 ASHRAE 청천공(clear sky) 모델의 월별 계수로 직달·천공산란·지면반사(반사율 0.2)를 합산했습니다.</p>
+    <p><b>한계</b> — 구름·대기오염·주변 건물과 수목의 그늘, 유리의 투과율과 창틀 면적은 반영하지 않은 맑은 날 기준 상한값입니다. 좌우 벽(측벽)이나 세로 차양의 그림자도 계산에 넣지 않았습니다.</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const RAD = Math.PI/180, DEG = 180/Math.PI;
+  const A=[1230,1215,1186,1136,1104,1088,1085,1107,1152,1193,1221,1234];
+  const B=[0.142,0.144,0.156,0.180,0.196,0.205,0.207,0.201,0.177,0.160,0.149,0.142];
+  const C=[0.058,0.060,0.071,0.097,0.121,0.134,0.136,0.122,0.092,0.073,0.063,0.057];
+  const CITIES=[
+    {n:'서울', lat:37.57, lon:126.98},{n:'인천', lat:37.46, lon:126.71},
+    {n:'강릉', lat:37.75, lon:128.90},{n:'대전', lat:36.35, lon:127.38},
+    {n:'대구', lat:35.87, lon:128.60},{n:'광주', lat:35.16, lon:126.85},
+    {n:'부산', lat:35.18, lon:129.08},{n:'제주', lat:33.50, lon:126.53}
+  ];
+  const TZ=9;
+  const S={cityIdx:0, lat:37.57, lon:126.98, doy:262, hour:13, wallAz:180, D:90, g:30, wh:150, s:45};
+
+  const $=id=>document.getElementById(id);
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const wrap180=a=>{a=((a+180)%360+360)%360-180; return a;};
+  function dateOf(n){const d=new Date(2025,0,1); d.setDate(Math.round(n)); return d;}
+  function doyOf(d){return Math.round((d-new Date(d.getFullYear(),0,1))/86400000)+1;}
+
+  function sunPos(lat,lon,doy,hour){
+    const decl=23.45*Math.sin(2*Math.PI*(284+doy)/365);
+    const b=2*Math.PI*(doy-81)/364;
+    const eot=9.87*Math.sin(2*b)-7.53*Math.cos(b)-1.5*Math.sin(b);
+    const tc=4*(lon-15*TZ)+eot;
+    const lst=hour+tc/60;
+    const H=15*(lst-12);
+    const sa=Math.sin(lat*RAD)*Math.sin(decl*RAD)+Math.cos(lat*RAD)*Math.cos(decl*RAD)*Math.cos(H*RAD);
+    const alt=Math.asin(clamp(sa,-1,1))*DEG;
+    let az=180;
+    const den=Math.cos(alt*RAD)*Math.cos(lat*RAD);
+    if(Math.abs(den)>1e-6){
+      az=Math.acos(clamp((Math.sin(decl*RAD)-sa*Math.sin(lat*RAD))/den,-1,1))*DEG;
+      if(H>0) az=360-az;
+    }
+    return {alt, az, lst, decl, tc, month:dateOf(doy).getMonth()};
+  }
+  function solarNoon(lon,doy){
+    const b=2*Math.PI*(doy-81)/364;
+    const eot=9.87*Math.sin(2*b)-7.53*Math.cos(b)-1.5*Math.sin(b);
+    return 12-(4*(lon-15*TZ)+eot)/60;
+  }
+
+  function evalGeom(sun,G){
+    const eaveH=G.s+G.wh+G.g;
+    const o={eaveH, night:false, behind:false, profile:0, shadowLine:eaveH, frac:0, pen:0, near:0,
+             entryTop:G.s, direct:0, diffuse:0, refl:0, total:0, gamma:0, Edn:0};
+    if(sun.alt<=0.3){o.night=true; return o;}
+    const m=sun.month;
+    const Edn=A[m]/Math.exp(B[m]/Math.max(Math.sin(sun.alt*RAD),0.02));
+    o.Edn=Edn;
+    const ym=G.s+G.wh/2;
+    const phi=G.D>0.5?Math.atan2(eaveH-ym,G.D):Math.PI/2;
+    o.diffuse=C[m]*Edn*0.5*Math.sin(phi);
+    o.refl=0.2*(Edn*Math.sin(sun.alt*RAD)+C[m]*Edn)*0.5;
+    const gam=wrap180(sun.az-G.wallAz); o.gamma=gam;
+    const cg=Math.cos(gam*RAD);
+    if(cg<=0.02){o.behind=true; o.total=o.diffuse+o.refl; return o;}
+    const tanP=Math.tan(sun.alt*RAD)/cg;
+    o.profile=Math.atan(tanP)*DEG;
+    o.shadowLine=eaveH-G.D*tanP;
+    const top=clamp(o.shadowLine,G.s,G.s+G.wh);
+    o.entryTop=top;
+    o.frac=G.wh>0?(top-G.s)/G.wh:0;
+    if(o.frac>0.001){o.near=G.s/tanP; o.pen=top/tanP;} else {o.frac=0; o.pen=0; o.near=0;}
+    o.direct=Edn*Math.cos(sun.alt*RAD)*cg*o.frac;
+    o.total=o.direct+o.diffuse+o.refl;
+    return o;
+  }
+  function admitted(G,doy,hour){
+    return evalGeom(sunPos(G.lat,G.lon,doy,hour),G).total;
+  }
+  function dayTotal(G,doy,eave){
+    const g2=Object.assign({},G); if(!eave) g2.D=0;
+    let sum=0; const st=1/6;
+    for(let h=4;h<=20.0001;h+=st) sum+=admitted(g2,doy,h)*st;
+    return sum;
+  }
+
+  /* ---------- 단면도 ---------- */
+  function scene(G,sun,E){
+    const W=900,H=480, eaveH=E.eaveH, D=G.D, s=G.s, wh=G.wh, wallT=22, roomD=500, plat=45;
+    const roofRise=0.42;
+    const xMin=-(Math.max(D,70)+215), xMax=roomD;
+    const yMin=-(plat+60), yMax=eaveH+Math.max(95,(D+wallT)*roofRise+45);
+    const sc=Math.min((W-80)/(xMax-xMin),(H-60)/(yMax-yMin));
+    const uw=(xMax-xMin)*sc, uh=(yMax-yMin)*sc;
+    const ox=(W-uw)/2, oy=26+((H-60)-uh)/2;
+    const X=x=>ox+(x-xMin)*sc, Y=y=>oy+uh-(y-yMin)*sc;
+    const n=v=>Math.round(v*10)/10;
+    let g='';
+    g+=`<defs>
+      <linearGradient id="patch" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="var(--sun-2)" stop-opacity=".55"/>
+        <stop offset="1" stop-color="var(--sun-2)" stop-opacity="0"/>
+      </linearGradient>
+      <marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0 0 L8 4 L0 8 z" fill="var(--ink-3)"/>
+      </marker>
+    </defs>`;
+    g+=`<rect x="0" y="0" width="${W}" height="${H}" fill="var(--sky)"/>`;
+    g+=`<rect x="${X(0)}" y="${oy-26}" width="${W-X(0)}" height="${H}" fill="var(--panel-2)"/>`;
+    g+=`<rect x="0" y="${Y(-plat)}" width="${X(0)}" height="${H}" fill="var(--earth)"/>`;
+    g+=`<rect x="${X(-150)}" y="${Y(0)}" width="${W-X(-150)}" height="${Y(-plat)-Y(0)}" fill="var(--stone)"/>`;
+    g+=`<rect x="${X(0)}" y="${Y(0)-Math.max(3,8*sc)}" width="${W-X(0)}" height="${Math.max(3,8*sc)}" fill="var(--wood)" opacity=".75"/>`;
+    g+=`<line x1="${X(0)}" y1="${Y(0)}" x2="${W}" y2="${Y(0)}" stroke="var(--ink-3)" stroke-width="1"/>`;
+
+    // 빛 유입 영역 + 바닥 광반
+    if(!E.night&&!E.behind&&E.frac>0){
+      const far=Math.min(E.pen,roomD), near=Math.min(E.near,roomD);
+      g+=`<path d="M${X(0)} ${Y(E.entryTop)} L${X(0)} ${Y(s)} L${X(near)} ${Y(0)} L${X(far)} ${Y(0)} Z" fill="var(--sun-2)" opacity=".20"/>`;
+      g+=`<rect x="${X(near)}" y="${Y(0)-18}" width="${Math.max(2,X(far)-X(near))}" height="18" fill="url(#patch)"/>`;
+      g+=`<line x1="${X(near)}" y1="${Y(0)}" x2="${X(far)}" y2="${Y(0)}" stroke="var(--sun)" stroke-width="3"/>`;
+      if(E.pen>roomD) g+=`<path d="M${X(roomD)-10} ${Y(0)-9} l9 9 l-9 9" fill="none" stroke="var(--sun)" stroke-width="2"/>`;
+    }
+
+    // 벽 · 창
+    g+=`<rect x="${X(0)}" y="${Y(s)}" width="${X(wallT)-X(0)}" height="${Y(0)-Y(s)}" fill="var(--panel)" stroke="var(--ink-3)" stroke-width="1"/>`;
+    g+=`<rect x="${X(0)}" y="${Y(eaveH)}" width="${X(wallT)-X(0)}" height="${Y(s+wh)-Y(eaveH)}" fill="var(--panel)" stroke="var(--ink-3)" stroke-width="1"/>`;
+    g+=`<rect x="${X(0)}" y="${Y(s+wh)}" width="${X(wallT)-X(0)}" height="${Y(s)-Y(s+wh)}" fill="var(--glass)" opacity=".85"/>`;
+    for(let y=s+25;y<s+wh;y+=25) g+=`<line x1="${X(0)}" y1="${Y(y)}" x2="${X(wallT)}" y2="${Y(y)}" stroke="var(--wood)" stroke-width="1" opacity=".45"/>`;
+    // 창면 음영 / 일조 표시
+    if(!E.night&&!E.behind){
+      const sl=clamp(E.shadowLine,s,s+wh);
+      if(sl>s) g+=`<rect x="${X(-6)}" y="${Y(sl)}" width="${X(wallT)-X(-6)}" height="${Y(s)-Y(sl)}" fill="var(--sun-2)" opacity=".5"/>`;
+      if(sl<s+wh) g+=`<rect x="${X(-6)}" y="${Y(s+wh)}" width="${X(wallT)-X(-6)}" height="${Y(sl)-Y(s+wh)}" fill="var(--shade)" opacity=".38"/>`;
+    } else {
+      g+=`<rect x="${X(-6)}" y="${Y(s+wh)}" width="${X(wallT)-X(-6)}" height="${Y(s)-Y(s+wh)}" fill="var(--shade)" opacity=".3"/>`;
+    }
+    g+=`<rect x="${X(0)}" y="${Y(s+wh)}" width="${X(wallT)-X(0)}" height="${Y(s)-Y(s+wh)}" fill="none" stroke="var(--ink-2)" stroke-width="1.2"/>`;
+
+    // 처마 · 지붕
+    const tipX=-D, tipY=eaveH;
+    g+=`<path d="M${X(tipX)} ${Y(tipY)} L${X(wallT)} ${Y(eaveH+(D+wallT)*roofRise)} L${X(wallT)} ${Y(eaveH+(D+wallT)*roofRise+18)} L${X(tipX-12)} ${Y(tipY+15)} Z" fill="var(--tile)"/>`;
+    g+=`<line x1="${X(tipX)}" y1="${Y(tipY)}" x2="${X(0)}" y2="${Y(eaveH)}" stroke="var(--wood)" stroke-width="3"/>`;
+    g+=`<circle cx="${X(tipX)}" cy="${Y(tipY)}" r="3" fill="var(--ink)"/>`;
+
+    // 광선
+    if(!E.night&&!E.behind){
+      const tanP=Math.tan(E.profile*RAD);
+      const ray=(x0,y0,ahead,back)=>`<line x1="${X(x0-back)}" y1="${Y(y0+back*tanP)}" x2="${X(x0+ahead)}" y2="${Y(y0-ahead*tanP)}" stroke="var(--sun)" stroke-width="1.6" stroke-dasharray="7 5" opacity=".95"/>`;
+      const backLen=Math.min(260,(X(tipX)-14)/sc);
+      g+=ray(tipX,tipY,0,backLen);
+      g+=`<line x1="${X(tipX)}" y1="${Y(tipY)}" x2="${X(0)}" y2="${Y(E.shadowLine)}" stroke="var(--sun)" stroke-width="1.6" stroke-dasharray="7 5"/>`;
+      if(E.frac>0){
+        const far=Math.min(E.pen,roomD);
+        g+=`<line x1="${X(0)}" y1="${Y(E.entryTop)}" x2="${X(far)}" y2="${Y(Math.max(0,E.entryTop-far*tanP))}" stroke="var(--sun)" stroke-width="1.6" stroke-dasharray="7 5"/>`;
+        const nr=Math.min(E.near,roomD);
+        g+=`<line x1="${X(-backLen)}" y1="${Y(s+backLen*tanP)}" x2="${X(nr)}" y2="${Y(Math.max(0,s-nr*tanP))}" stroke="var(--sun)" stroke-width="1.2" stroke-dasharray="5 6" opacity=".7"/>`;
+      }
+      // 각도호
+      const P=E.profile*RAD, r=42;
+      const ax=X(tipX), ay=Y(tipY);
+      g+=`<path d="M${ax+r} ${ay} A${r} ${r} 0 0 1 ${ax+r*Math.cos(P)} ${ay+r*Math.sin(P)}" fill="none" stroke="var(--ink-3)" stroke-width="1"/>`;
+      g+=`<text x="${ax+(r+13)*Math.cos(P/2)}" y="${ay+(r+13)*Math.sin(P/2)+4}" font-size="12" font-family="var(--mono)" fill="var(--ink-2)">${n(E.profile)}°</text>`;
+      // 태양
+      let R=118;
+      if(Math.cos(P)>0.02) R=Math.min(R,(ax-44)/Math.cos(P));
+      if(Math.sin(P)>0.02) R=Math.min(R,(ay-40)/Math.sin(P));
+      R=Math.max(52,R);
+      const sx=ax-R*Math.cos(P), sy=ay-R*Math.sin(P);
+      g+=`<circle cx="${sx}" cy="${sy}" r="13" fill="var(--sun-2)"/>`;
+      for(let i=0;i<8;i++){const a=i*Math.PI/4;
+        g+=`<line x1="${sx+17*Math.cos(a)}" y1="${sy+17*Math.sin(a)}" x2="${sx+23*Math.cos(a)}" y2="${sy+23*Math.sin(a)}" stroke="var(--sun-2)" stroke-width="2" stroke-linecap="round"/>`;}
+      g+=`<text x="${sx}" y="${sy+40}" font-size="11.5" font-family="var(--mono)" fill="var(--ink-2)" text-anchor="middle">고도 ${n(sun.alt)}°</text>`;
+    }
+
+    // 치수선: 처마 내밀기
+    const dy=eaveH+(D+wallT)*roofRise+34;
+    g+=`<line x1="${X(-D)}" y1="${Y(dy)}" x2="${X(0)}" y2="${Y(dy)}" stroke="var(--ink-3)" stroke-width="1"/>`;
+    g+=`<line x1="${X(-D)}" y1="${Y(dy)-5}" x2="${X(-D)}" y2="${Y(dy)+5}" stroke="var(--ink-3)"/>`;
+    g+=`<line x1="${X(0)}" y1="${Y(dy)-5}" x2="${X(0)}" y2="${Y(dy)+5}" stroke="var(--ink-3)"/>`;
+    g+=`<text x="${(X(-D)+X(0))/2}" y="${Y(dy)-8}" font-size="12" font-family="var(--mono)" fill="var(--ink-2)" text-anchor="middle">내밀기 ${D}cm</text>`;
+    // 치수선: 유입 깊이
+    if(!E.night&&!E.behind&&E.frac>0){
+      const far=Math.min(E.pen,roomD), yy=Y(0)+16;
+      g+=`<line x1="${X(0)}" y1="${yy}" x2="${X(far)}" y2="${yy}" stroke="var(--ink-3)" stroke-width="1" marker-end="url(#ar)"/>`;
+      g+=`<text x="${X(0)+8}" y="${yy-6}" font-size="12" font-family="var(--mono)" fill="var(--ink-2)">유입 깊이 ${Math.round(E.pen)}cm</text>`;
+    }
+    g+=`<text x="18" y="${oy-8}" font-size="11" fill="var(--ink-3)" letter-spacing="2">실외</text>`;
+    g+=`<text x="${W-18}" y="${oy-8}" font-size="11" fill="var(--ink-3)" letter-spacing="2" text-anchor="end">실내</text>`;
+    return g;
+  }
+
+  function compass(G,sun,E){
+    const cx=48,cy=48,r=33;
+    let g=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--panel-2)" stroke="var(--line)"/>`;
+    const dirs=[['북',0],['동',90],['남',180],['서',270]];
+    dirs.forEach(([t,a])=>{const ra=(a-90)*RAD;
+      g+=`<text x="${cx+(r+8)*Math.cos(ra)}" y="${cy+(r+8)*Math.sin(ra)+3.5}" font-size="9" fill="var(--ink-3)" text-anchor="middle">${t}</text>`;});
+    const wa=(G.wallAz-90)*RAD;
+    const p=(ang,rr)=>`${cx+rr*Math.cos(ang)},${cy+rr*Math.sin(ang)}`;
+    g+=`<path d="M${p(wa-0.42,r)} A${r} ${r} 0 0 1 ${p(wa+0.42,r)} L${cx},${cy} Z" fill="var(--shade)" opacity=".28"/>`;
+    g+=`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(wa)}" y2="${cy+r*Math.sin(wa)}" stroke="var(--shade)" stroke-width="2"/>`;
+    if(!E.night){
+      const sa=(sun.az-90)*RAD;
+      g+=`<line x1="${cx}" y1="${cy}" x2="${cx+(r-7)*Math.cos(sa)}" y2="${cy+(r-7)*Math.sin(sa)}" stroke="var(--sun-2)" stroke-width="1" stroke-dasharray="3 3"/>`;
+      g+=`<circle cx="${cx+(r-7)*Math.cos(sa)}" cy="${cy+(r-7)*Math.sin(sa)}" r="5.5" fill="var(--sun-2)"/>`;
+    }
+    g+=`<circle cx="${cx}" cy="${cy}" r="2" fill="var(--ink-2)"/>`;
+    return g;
+  }
+
+  /* ---------- 히트맵 ---------- */
+  const BINS=[1,50,150,300,450,600];
+  function binColor(v){
+    if(v<BINS[0]) return 'var(--h0)';
+    for(let i=1;i<BINS.length;i++) if(v<BINS[i]) return 'var(--h'+i+')';
+    return 'var(--h6)';
+  }
+  const HRS=[]; for(let h=5;h<=19;h++) HRS.push(h);
+  function heatmap(G){
+    const L=40,T=12,Rp=10,Bm=52, W=660,H=366;
+    const cw=(W-L-Rp)/12, ch=(H-T-Bm)/HRS.length;
+    let g='', cur={m:dateOf(S.doy).getMonth(), h:Math.round(S.hour)};
+    for(let m=0;m<12;m++){
+      const doy=doyOf(new Date(2025,m,15));
+      for(let i=0;i<HRS.length;i++){
+        const v=admitted(G,doy,HRS[i]);
+        const x=L+m*cw, y=T+i*ch;
+        const sel=(m===cur.m&&HRS[i]===cur.h);
+        g+=`<rect class="cell" x="${x}" y="${y}" width="${cw-1}" height="${ch-1}" fill="${binColor(v)}" data-m="${m}" data-h="${HRS[i]}" data-v="${Math.round(v)}"${sel?' stroke="var(--ink)" stroke-width="1.8"':''}/>`;
+      }
+    }
+    HRS.forEach((h,i)=>{ if(h%2===1) return;
+      g+=`<text x="${L-7}" y="${T+i*ch+ch/2+3.5}" font-size="10" font-family="var(--mono)" fill="var(--ink-3)" text-anchor="end">${h}시</text>`;});
+    for(let m=0;m<12;m++)
+      g+=`<text x="${L+m*cw+cw/2}" y="${T+HRS.length*ch+14}" font-size="10" font-family="var(--mono)" fill="var(--ink-3)" text-anchor="middle">${m+1}</text>`;
+    g+=`<text x="${L+(W-L-Rp)/2}" y="${T+HRS.length*ch+30}" font-size="10.5" fill="var(--ink-3)" text-anchor="middle">월</text>`;
+    const lx=L, ly=H-16, sw=(W-L-Rp)/9;
+    const labels=['0','50','150','300','450','600+'];
+    for(let i=0;i<7;i++){
+      g+=`<rect x="${lx+i*26}" y="${ly-9}" width="25" height="10" fill="var(--h${i})"/>`;
+    }
+    labels.forEach((t,i)=>{ g+=`<text x="${lx+i*26}" y="${ly+12}" font-size="9.5" font-family="var(--mono)" fill="var(--ink-3)">${t}</text>`;});
+    g+=`<text x="${lx+7*26+8}" y="${ly}" font-size="10" fill="var(--ink-3)">W/m² · 창면 유입 일사</text>`;
+    return g;
+  }
+
+  /* ---------- 라벨 ---------- */
+  function hhmm(h){const t=Math.round(h*60); return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
+  function dateLabel(doy){
+    const d=dateOf(doy), m=d.getMonth()+1, day=d.getDate();
+    const tag={172:'하지',355:'동지',80:'춘분',266:'추분'};
+    let t='';
+    for(const k in tag) if(Math.abs(doy-k)<=2) t=' · '+tag[k];
+    return `${m}월 ${day}일${t}`;
+  }
+  const AZN=['북','북동','동','남동','남','남서','서','북서'];
+  function azLabel(a){
+    const i=Math.round(a/45)%8, d=wrap180(a-i*45);
+    return `${a}° · ${Math.abs(d)<3?'정':''}${AZN[i]}향`;
+  }
+
+  /* ---------- 렌더 ---------- */
+  let dayCache={key:'',v:0,v0:0};
+  function render(full){
+    const G=S;
+    const sun=sunPos(G.lat,G.lon,G.doy,G.hour);
+    const E=evalGeom(sun,G);
+
+    $('scene').innerHTML=scene(G,sun,E);
+    $('compass').innerHTML=compass(G,sun,E);
+
+    const city=CITIES[S.cityIdx];
+    let st=`${dateLabel(G.doy)} ${hhmm(G.hour)} · ${city?city.n:'위도 '+G.lat.toFixed(1)+'°'} · ${azLabel(G.wallAz)}`;
+    if(E.night) st+=' · 일출 전/일몰 후';
+    else if(E.behind) st+=' · 태양이 벽 뒤편(직사광 없음)';
+    $('stageState').textContent=st;
+
+    $('mAlt').innerHTML=E.night?'—':`${sun.alt.toFixed(1)}<small>°</small>`;
+    $('mAzi').textContent=E.night?'수평선 아래':`방위 ${sun.az.toFixed(0)}° · 진태양시 ${hhmm(clamp(sun.lst,0,23.99))}`;
+    $('mProf').innerHTML=(E.night||E.behind)?'—':`${E.profile.toFixed(1)}<small>°</small>`;
+    const shadePct=(E.night||E.behind)?100:Math.round((1-E.frac)*100);
+    $('mShade').innerHTML=`${shadePct}<small>%</small>`;
+    $('mShadeN').textContent=(E.night||E.behind)?'직사광 없음':(E.frac>=0.999?'창 전체에 직사광':`그림자 경계 바닥에서 ${Math.round(clamp(E.shadowLine,G.s,G.s+G.wh))}cm`);
+    $('mPen').innerHTML=(E.frac>0)?`${Math.round(E.pen)}<small>cm</small>`:'0<small>cm</small>';
+    $('mIrr').innerHTML=`${Math.round(E.total)}<small>W/m²</small>`;
+    $('mIrrN').textContent=`직달 ${Math.round(E.direct)} · 산란 ${Math.round(E.diffuse)} · 반사 ${Math.round(E.refl)}`;
+
+    if(full!==false){
+      const key=[G.lat,G.lon,G.doy,G.wallAz,G.D,G.g,G.wh,G.s].join('|');
+      if(dayCache.key!==key){
+        dayCache={key, v:dayTotal(G,G.doy,true), v0:dayTotal(G,G.doy,false)};
+      }
+      const cut=dayCache.v0>0?Math.round((1-dayCache.v/dayCache.v0)*100):0;
+      $('mDay').innerHTML=`${(dayCache.v/1000).toFixed(2)}<small>kWh/m²</small>`;
+      $('mDayN').textContent=`처마 없을 때 대비 ${cut>=0?'−':'+'}${Math.abs(cut)}%`;
+      $('heat').innerHTML=heatmap(G);
+      diagnose(G);
+    }
+  }
+
+  function noonProfile(G,doy){
+    const h=solarNoon(G.lon,doy);
+    const sun=sunPos(G.lat,G.lon,doy,h);
+    const gam=wrap180(sun.az-G.wallAz), cg=Math.cos(gam*RAD);
+    if(sun.alt<=0.3||cg<=0.02) return null;
+    return {tanP:Math.tan(sun.alt*RAD)/cg, alt:sun.alt, hour:h};
+  }
+
+  function diagnose(G){
+    const eaveH=G.s+G.wh+G.g;
+    const su=noonProfile(G,172), wi=noonProfile(G,355);
+    const items=[];
+    const shadeAt=p=>{ if(!p) return null; const sl=eaveH-G.D*p.tanP; return 1-(clamp(sl,G.s,G.s+G.wh)-G.s)/G.wh; };
+    const sS=shadeAt(su), sW=shadeAt(wi);
+    if(sS===null) items.push({c:'',t:'<b>하지 남중</b> 이 방위에서는 정오에 직사광이 들지 않습니다.',q:'—'});
+    else items.push({c:sS>=0.9?'ok':(sS>=0.6?'warn':'bad'), t:`<b>하지 정오 차폐</b> 여름 한낮 창면을 ${Math.round(sS*100)}% 가립니다.`, q:`${Math.round(sS*100)}%`});
+    if(sW===null) items.push({c:'',t:'<b>동지 남중</b> 이 방위에서는 정오에 직사광이 들지 않습니다.',q:'—'});
+    else items.push({c:(1-sW)>=0.9?'ok':((1-sW)>=0.6?'warn':'bad'), t:`<b>동지 정오 채광</b> 겨울 한낮 창면의 ${Math.round((1-sW)*100)}%에 햇빛이 듭니다.`, q:`${Math.round((1-sW)*100)}%`});
+    if(wi){
+      const sl=eaveH-G.D*wi.tanP, top=clamp(sl,G.s,G.s+G.wh);
+      const pen=top>G.s?top/wi.tanP:0;
+      items.push({c:pen>=200?'ok':(pen>=100?'warn':'bad'), t:`<b>동지 햇빛 유입 깊이</b> 겨울 정오에 방 안 ${Math.round(pen)}cm까지 햇빛이 들어옵니다.`, q:`${Math.round(pen)}cm`});
+    }
+    const sum=dayTotal(G,172,true), win=dayTotal(G,355,true);
+    items.push({c:win>sum?'ok':'warn', t:`<b>계절 균형</b> 하루 유입량이 하지 ${(sum/1000).toFixed(2)} · 동지 ${(win/1000).toFixed(2)} kWh/m²입니다. 겨울이 더 많아야 잘 된 처마입니다.`, q:`${(win/Math.max(sum,1)).toFixed(2)}배`});
+    $('diag').innerHTML=items.map(i=>`<div class="d ${i.c}"><i></i><span class="t">${i.t}</span><span class="q">${i.q}</span></div>`).join('');
+
+    let rec='';
+    if(su&&wi){
+      const dMin=(eaveH-(G.s+0.1*G.wh))/su.tanP;
+      const dMax=(eaveH-(G.s+0.9*G.wh))/wi.tanP;
+      if(dMax>=dMin&&dMax>0){
+        const lo=Math.max(0,Math.round(dMin/5)*5), hi=Math.round(dMax/5)*5;
+        rec=`<p><b>권장 내밀기 ${lo}~${hi}cm</b> — 하지 정오 90% 이상 차폐, 동지 정오 90% 이상 채광을 함께 만족하는 범위입니다.</p>
+             <div class="chips"><button type="button" id="applyD" data-d="${Math.round((lo+hi)/2/5)*5}">${Math.round((lo+hi)/2/5)*5}cm 적용</button></div>`;
+      } else {
+        rec=`<p><b>두 조건을 동시에 만족하는 내밀기가 없습니다.</b> 여름을 가리려면 ${Math.round(dMin)}cm 이상, 겨울을 들이려면 ${Math.round(Math.max(dMax,0))}cm 이하가 필요합니다. 창 상단~처마 밑 높이를 키우거나 창을 낮추면 범위가 생깁니다.</p>`;
+      }
+    } else {
+      rec='<p>남향에서 벗어난 방위라 남중 기준 권장값을 계산하지 않았습니다. 동·서향 창은 처마보다 세로 차양이나 수직 루버가 효과적입니다.</p>';
+    }
+    $('rec').innerHTML=rec;
+    const ap=$('applyD');
+    if(ap) ap.addEventListener('click',()=>{S.D=+ap.dataset.d; $('D').value=S.D; syncLabels(); render();});
+  }
+
+  /* ---------- 입력 ---------- */
+  function syncLabels(){
+    $('vLat').textContent=S.lat.toFixed(1)+'°N';
+    $('vDoy').textContent=dateLabel(S.doy);
+    $('vHour').textContent=hhmm(S.hour);
+    $('vAz').textContent=azLabel(S.wallAz);
+    $('vD').textContent=S.D+'cm';
+    $('vG').textContent=S.g+'cm';
+    $('vWh').textContent=S.wh+'cm';
+    $('vS').textContent=S.s+'cm';
+  }
+  const sel=$('city');
+  CITIES.forEach((c,i)=>{const o=document.createElement('option'); o.value=i; o.textContent=`${c.n} (북위 ${c.lat.toFixed(1)}°)`; sel.appendChild(o);});
+  const custom=document.createElement('option'); custom.value='-1'; custom.textContent='직접 입력'; sel.appendChild(custom);
+  sel.value='0';
+  sel.addEventListener('change',()=>{
+    const i=+sel.value; S.cityIdx=i;
+    if(i>=0){S.lat=CITIES[i].lat; S.lon=CITIES[i].lon; $('lat').value=S.lat;}
+    syncLabels(); render();
+  });
+
+  [['lat','lat'],['doy','doy'],['hour','hour'],['wallAz','wallAz'],['D','D'],['g','g'],['wh','wh'],['s','s']].forEach(([id,key])=>{
+    $(id).addEventListener('input',e=>{
+      S[key]=+e.target.value;
+      if(key==='lat'){S.cityIdx=-1; sel.value='-1';}
+      syncLabels();
+      render(key!=='hour');
+    });
+  });
+  document.querySelectorAll('[data-doy]').forEach(b=>b.addEventListener('click',()=>{
+    S.doy=+b.dataset.doy; $('doy').value=S.doy; syncLabels(); render();}));
+  document.querySelectorAll('[data-az]').forEach(b=>b.addEventListener('click',()=>{
+    S.wallAz=+b.dataset.az; $('wallAz').value=S.wallAz; syncLabels(); render();}));
+  $('today').addEventListener('click',()=>{
+    S.doy=doyOf(new Date()); $('doy').value=S.doy; syncLabels(); render();});
+  $('noon').addEventListener('click',()=>{
+    S.hour=clamp(solarNoon(S.lon,S.doy),4,20); $('hour').value=S.hour; syncLabels(); render();});
+
+  let playing=false, raf=0, last=0;
+  $('play').addEventListener('click',()=>{
+    playing=!playing; $('play').classList.toggle('on',playing);
+    $('play').textContent=playing?'정지':'하루 재생';
+    if(playing){last=performance.now(); raf=requestAnimationFrame(step);}
+    else {cancelAnimationFrame(raf); render();}
+  });
+  function step(t){
+    const dt=Math.min(0.06,(t-last)/1000); last=t;
+    S.hour+=dt*2.6;
+    if(S.hour>19.5) S.hour=5;
+    $('hour').value=S.hour; syncLabels(); render(false);
+    if(playing) raf=requestAnimationFrame(step);
+  }
+
+  const heat=$('heat');
+  heat.addEventListener('mousemove',e=>{
+    const c=e.target.closest('rect.cell'); if(!c) return;
+    $('heatRead').textContent=`${+c.dataset.m+1}월 15일 ${c.dataset.h}:00 — 창면 유입 ${c.dataset.v} W/m²`;
+  });
+  heat.addEventListener('click',e=>{
+    const c=e.target.closest('rect.cell'); if(!c) return;
+    S.doy=doyOf(new Date(2025,+c.dataset.m,15)); S.hour=+c.dataset.h;
+    $('doy').value=S.doy; $('hour').value=S.hour; syncLabels(); render();
+  });
+
+  try{
+    const saved=JSON.parse(localStorage.getItem('cheoma')||'null');
+    if(saved&&typeof saved==='object') Object.keys(S).forEach(k=>{if(typeof saved[k]==='number') S[k]=saved[k];});
+  }catch(e){}
+  ['lat','doy','hour','wallAz','D','g','wh','s'].forEach(k=>{$(k).value=S[k];});
+  if(S.cityIdx>=0&&S.cityIdx<CITIES.length) sel.value=String(S.cityIdx); else sel.value='-1';
+  window.addEventListener('beforeunload',()=>{try{localStorage.setItem('cheoma',JSON.stringify(S));}catch(e){}});
+
+  syncLabels();
+  render();
+})();
+</script>
+
+</body>
+</html>
