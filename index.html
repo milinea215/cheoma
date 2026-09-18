@@ -13,7 +13,7 @@
   img{max-width:100%;}
   [hidden]{display:none!important;}
 </style>
-<title>처마 일조 시뮬레이터</title>
+<title>처마와 햇빛 실험실</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   :root{
@@ -74,7 +74,7 @@
   .state{font-family:var(--mono); font-size:12px; color:var(--ink-2);}
   #scene{display:block; width:100%; height:auto; background:var(--sunk); border-radius:3px;}
 
-  .metrics{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; margin-top:14px; background:var(--line-2); border:1px solid var(--line-2);}
+  .metrics{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; margin-top:14px; background:var(--line-2); border:1px solid var(--line-2);}
   .m{background:var(--panel); padding:9px 11px 10px; display:flex; flex-direction:column; gap:2px; min-width:0;}
   .m .k{font-size:11px; color:var(--ink-3); letter-spacing:.04em;}
   .m .v{font-family:var(--mono); font-size:19px; font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
@@ -122,7 +122,25 @@
   footer{margin-top:22px; padding-top:14px; border-top:1px solid var(--line); font-size:11.5px; color:var(--ink-3); max-width:80ch; display:flex; flex-direction:column; gap:5px;}
   footer b{color:var(--ink-2); font-weight:500;}
 
+  .lede b{color:var(--ink); font-weight:600;}
+  .summary{background:var(--panel-2); border:1px solid var(--line-2); border-left:3px solid var(--sun); border-radius:3px; padding:10px 13px; margin-bottom:10px; font-size:15px; color:var(--ink-2); text-wrap:balance;}
+  .summary b{color:var(--ink); font-weight:600; font-family:var(--mono); font-size:16.5px;}
+  .m .cap{font-size:11px; color:var(--ink-3); margin-top:3px;}
+  .bar{height:6px; border-radius:3px; background:var(--sunk); margin:5px 0 3px; overflow:hidden;}
+  .bar i{display:block; height:100%; width:0; background:var(--sun); border-radius:3px;}
+  details.adv{margin-top:11px; border-top:1px solid var(--line-2); padding-top:10px;}
+  details.adv > summary{font-size:12px; color:var(--ink-3); cursor:pointer; list-style:none;}
+  details.adv > summary::-webkit-details-marker{display:none;}
+  details.adv > summary::before{content:'▸ ';}
+  details.adv[open] > summary::before{content:'▾ ';}
+  .acts{grid-column:1/-1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px;}
+  .act{padding:13px 15px 15px;}
+  .act .num{font-family:var(--mono); font-size:11px; color:var(--sun); letter-spacing:.14em;}
+  .act h3{font-family:var(--display); font-size:15px; margin:3px 0 5px;}
+  .act p{font-size:13px; color:var(--ink-2);}
+
   @media (max-width:860px){
+    .acts{grid-template-columns:minmax(0,1fr);}
     .grid{grid-template-columns:minmax(0,1fr);}
     .metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
   }
@@ -131,51 +149,47 @@
 
 <div class="wrap">
   <header class="head">
-    <p class="eyebrow">한옥 차양 설계 · 태양궤도 계산</p>
-    <h1>처마 일조 시뮬레이터</h1>
-    <p class="lede">위도와 절기, 시각에 따른 태양의 고도·방위를 계산해 처마가 드리우는 그림자를 단면으로 그립니다. 창으로 실제 들어오는 일사량(W/m²)과 햇빛이 방 안으로 파고드는 깊이까지 함께 봅니다.</p>
+    <p class="eyebrow">6학년 과학 · 계절의 변화</p>
+    <h1>처마와 햇빛 실험실</h1>
+    <p class="lede">한옥 지붕에서 벽 바깥으로 길게 나온 부분을 <b>처마</b>라고 해요. 처마는 여름 햇빛은 가려 주고 겨울 햇빛은 들여보내 줍니다. 날짜·시각·처마 길이를 바꿔 가며 방 안으로 햇빛이 얼마나 들어오는지 살펴보세요.</p>
   </header>
 
   <main class="grid">
     <section class="stage panel">
       <div class="stage-head">
-        <h2>단면 — 처마와 햇빛</h2>
+        <h2>옆에서 잘라 본 모습</h2>
         <p class="state" id="stageState">—</p>
       </div>
-      <svg id="scene" viewBox="0 0 900 480" role="img" aria-label="처마 단면과 태양광 입사 단면도"></svg>
+      <p class="summary" id="summary">—</p>
+      <svg id="scene" viewBox="0 0 900 480" role="img" aria-label="처마와 햇빛이 들어오는 모습을 옆에서 자른 그림"></svg>
       <div class="metrics">
-        <div class="m compass"><svg id="compass" viewBox="0 0 96 96" width="88" height="88" aria-label="창 방위와 태양 방위"></svg></div>
+        <div class="m compass"><svg id="compass" viewBox="0 0 96 96" width="84" height="84" aria-label="해가 떠 있는 방향"></svg><span class="cap">해의 방향</span></div>
         <div class="m"><span class="k">태양 고도</span><span class="v" id="mAlt">—</span><span class="n" id="mAzi">—</span></div>
-        <div class="m"><span class="k">프로파일각 <small>(벽면 기준)</small></span><span class="v" id="mProf">—</span><span class="n">처마 그림자를 결정하는 각</span></div>
-        <div class="m shaded"><span class="k">창면 음영률</span><span class="v" id="mShade">—</span><span class="n" id="mShadeN">—</span></div>
-        <div class="m lit"><span class="k">실내 유입 깊이</span><span class="v" id="mPen">—</span><span class="n">창 아래 벽면부터 바닥 햇빛 끝까지</span></div>
-        <div class="m lit"><span class="k">창면 유입 일사</span><span class="v" id="mIrr">—</span><span class="n" id="mIrrN">—</span></div>
-        <div class="m"><span class="k">하루 유입량</span><span class="v" id="mDay">—</span><span class="n" id="mDayN">—</span></div>
+        <div class="m shaded"><span class="k">창문에 생긴 그늘</span><span class="v" id="mShade">—</span><span class="n" id="mShadeN">—</span></div>
+        <div class="m lit"><span class="k">방 안으로 들어온 햇빛</span><span class="v" id="mPen">—</span><span class="n">창문 아래 벽에서 잰 거리예요</span></div>
+        <div class="m lit"><span class="k">햇빛 세기</span><span class="v" id="mIrr">—</span><div class="bar"><i id="mBar"></i></div><span class="n" id="mIrrN">—</span></div>
+        <div class="m"><span class="k">처마가 막아 준 햇빛</span><span class="v" id="mDay">—</span><span class="n" id="mDayN">—</span></div>
       </div>
     </section>
 
     <aside class="side">
       <section class="panel controls">
-        <h2>설계 변수</h2>
+        <h2>바꿔 보기</h2>
 
         <div class="grp">
-          <p class="grp-t">위치와 시간</p>
+          <p class="grp-t">어디에서, 언제</p>
           <div class="row">
-            <div class="rl"><b>지역</b></div>
-            <select id="city" aria-label="지역"></select>
-          </div>
-          <div class="row">
-            <div class="rl"><b>위도</b><span id="vLat">—</span></div>
-            <input type="range" id="lat" min="33" max="43" step="0.1" value="37.6">
+            <div class="rl"><b>우리 동네</b></div>
+            <select id="city" aria-label="지역 고르기"></select>
           </div>
           <div class="row">
             <div class="rl"><b>날짜</b><span id="vDoy">—</span></div>
             <input type="range" id="doy" min="1" max="365" step="1" value="262">
             <div class="chips">
-              <button type="button" data-doy="355">동지</button>
-              <button type="button" data-doy="80">춘분</button>
-              <button type="button" data-doy="172">하지</button>
-              <button type="button" data-doy="266">추분</button>
+              <button type="button" data-doy="80">봄</button>
+              <button type="button" data-doy="172">여름</button>
+              <button type="button" data-doy="266">가을</button>
+              <button type="button" data-doy="355">겨울</button>
               <button type="button" id="today">오늘</button>
             </div>
           </div>
@@ -183,66 +197,94 @@
             <div class="rl"><b>시각</b><span id="vHour">—</span></div>
             <input type="range" id="hour" min="4" max="20" step="0.0833333" value="13">
             <div class="chips">
-              <button type="button" id="noon">남중시각</button>
+              <button type="button" id="noon">해가 가장 높을 때</button>
               <button type="button" id="play">하루 재생</button>
             </div>
           </div>
         </div>
 
         <div class="grp">
-          <p class="grp-t">창의 방향</p>
+          <p class="grp-t">창문이 보는 방향</p>
           <div class="row">
-            <div class="rl"><b>창이 바라보는 방위</b><span id="vAz">—</span></div>
+            <div class="rl"><b>창문 방향</b><span id="vAz">—</span></div>
             <input type="range" id="wallAz" min="0" max="355" step="5" value="180">
             <div class="chips">
-              <button type="button" data-az="180">정남</button>
-              <button type="button" data-az="135">남동</button>
-              <button type="button" data-az="225">남서</button>
-              <button type="button" data-az="90">정동</button>
-              <button type="button" data-az="270">정서</button>
+              <button type="button" data-az="180">남쪽</button>
+              <button type="button" data-az="135">남동쪽</button>
+              <button type="button" data-az="225">남서쪽</button>
+              <button type="button" data-az="90">동쪽</button>
+              <button type="button" data-az="270">서쪽</button>
+              <button type="button" data-az="0">북쪽</button>
             </div>
           </div>
         </div>
 
         <div class="grp">
-          <p class="grp-t">처마와 창 치수</p>
+          <p class="grp-t">처마와 창문 크기</p>
           <div class="row">
-            <div class="rl"><b>처마 내밀기</b><span id="vD">—</span></div>
+            <div class="rl"><b>처마 길이</b><span id="vD">—</span></div>
             <input type="range" id="D" min="0" max="250" step="5" value="90">
           </div>
           <div class="row">
-            <div class="rl"><b>창 상단~처마 밑 높이</b><span id="vG">—</span></div>
+            <div class="rl"><b>창문 위에서 처마까지</b><span id="vG">—</span></div>
             <input type="range" id="g" min="0" max="150" step="5" value="30">
           </div>
           <div class="row">
-            <div class="rl"><b>창 높이</b><span id="vWh">—</span></div>
+            <div class="rl"><b>창문 높이</b><span id="vWh">—</span></div>
             <input type="range" id="wh" min="60" max="240" step="5" value="150">
           </div>
           <div class="row">
-            <div class="rl"><b>창 하단 높이 (바닥 기준)</b><span id="vS">—</span></div>
+            <div class="rl"><b>바닥에서 창문 아래까지</b><span id="vS">—</span></div>
             <input type="range" id="s" min="0" max="150" step="5" value="45">
           </div>
         </div>
+
+        <details class="adv">
+          <summary>자세한 설정 (선생님용)</summary>
+          <div class="row" style="margin-top:9px;">
+            <div class="rl"><b>위도</b><span id="vLat">—</span></div>
+            <input type="range" id="lat" min="33" max="43" step="0.1" value="37.6">
+          </div>
+        </details>
       </section>
 
       <section class="panel diag">
-        <h2>설계 진단</h2>
+        <h2>이 처마, 잘 만들었을까?</h2>
         <div class="dlist" id="diag"></div>
         <div class="rec" id="rec"></div>
       </section>
     </aside>
 
     <section class="panel annual">
-      <h2>연간 일사 유입</h2>
-      <p class="sub">현재 처마·창 치수로 계산한 월별·시각별 창면 유입 일사량(W/m², 청천공 기준). 칸을 누르면 그 날짜·시각의 단면으로 이동합니다.</p>
-      <div class="chart-scroll"><svg id="heat" viewBox="0 0 660 366" role="img" aria-label="월별 시각별 창면 유입 일사량 히트맵"></svg></div>
-      <p class="read" id="heatRead">칸에 마우스를 올리면 값이 표시됩니다.</p>
+      <h2>일 년 내내 언제 햇빛이 들어올까?</h2>
+      <p class="sub">가로줄은 <b>몇 월</b>, 세로줄은 <b>몇 시</b>예요. 칸의 색이 진할수록 그때 창문으로 햇빛이 많이 들어옵니다. 칸을 누르면 그날 그 시각의 모습이 위 그림에 나타나요.</p>
+      <div class="chart-scroll"><svg id="heat" viewBox="0 0 660 366" role="img" aria-label="달과 시각에 따라 창문으로 들어오는 햇빛 양"></svg></div>
+      <p class="read" id="heatRead">칸에 손가락이나 마우스를 올려 보세요.</p>
     </section>
+
+    <div class="acts">
+      <section class="panel act">
+        <p class="num">해보기 1</p>
+        <h3>여름과 겨울 바꿔 보기</h3>
+        <p>시각을 낮 12시에 두고 <b>여름</b>과 <b>겨울</b> 단추를 번갈아 눌러 보세요. 창문에 생긴 그늘이 어떻게 달라지나요? 왜 그럴까요?</p>
+      </section>
+      <section class="panel act">
+        <p class="num">해보기 2</p>
+        <h3>처마 길이 늘여 보기</h3>
+        <p>여름 낮 12시로 맞춘 뒤 <b>처마 길이</b>를 0cm부터 조금씩 늘려 보세요. 창문이 완전히 그늘에 들어가는 길이는 몇 cm인가요?</p>
+      </section>
+      <section class="panel act">
+        <p class="num">해보기 3</p>
+        <h3>창문 방향 돌려 보기</h3>
+        <p>창문 방향을 <b>동쪽</b>이나 <b>서쪽</b>으로 바꿔 보세요. 남쪽 창문만큼 처마가 도움이 되지 않는 까닭을 생각해 보세요.</p>
+      </section>
+    </div>
   </main>
 
   <footer>
-    <p><b>계산 근거</b> — 태양 적위는 Cooper 근사식, 시간은 균시차와 경도 보정을 적용한 진태양시 기준입니다. 일사량은 ASHRAE 청천공(clear sky) 모델의 월별 계수로 직달·천공산란·지면반사(반사율 0.2)를 합산했습니다.</p>
-    <p><b>한계</b> — 구름·대기오염·주변 건물과 수목의 그늘, 유리의 투과율과 창틀 면적은 반영하지 않은 맑은 날 기준 상한값입니다. 좌우 벽(측벽)이나 세로 차양의 그림자도 계산에 넣지 않았습니다.</p>
+    <p><b>이 그림은 이렇게 계산해요</b> — 우리나라 위치와 날짜, 시각으로 해가 하늘의 어디쯤에 있는지 계산하고, 그 방향에서 온 햇빛이 처마에 가려지는지 창문으로 들어오는지를 따져 봅니다. 햇빛 세기는 구름 없는 맑은 날을 기준으로 한 값이에요.</p>
+    <p><b>여기까지는 못 담았어요</b> — 구름과 미세먼지, 옆집 건물이나 나무의 그늘, 유리창을 지나며 줄어드는 햇빛은 계산에 넣지 않았습니다. 그래서 실제로 들어오는 햇빛은 이 값보다 조금 적어요.</p>
+    <p><small>교사용 참고 — 태양 적위는 Cooper 근사식, 시각은 균시차·경도 보정을 적용한 진태양시 기준이며, 일사량은 ASHRAE 청천공 모델(직달·천공산란·지면반사 0.2)로 산출했습니다. 처마 그림자는 벽면 프로파일각으로 계산합니다.</small></p>
   </footer>
 </div>
 
@@ -397,11 +439,8 @@
         const nr=Math.min(E.near,roomD);
         g+=`<line x1="${X(-backLen)}" y1="${Y(s+backLen*tanP)}" x2="${X(nr)}" y2="${Y(Math.max(0,s-nr*tanP))}" stroke="var(--sun)" stroke-width="1.2" stroke-dasharray="5 6" opacity=".7"/>`;
       }
-      // 각도호
-      const P=E.profile*RAD, r=42;
+      const P=E.profile*RAD;
       const ax=X(tipX), ay=Y(tipY);
-      g+=`<path d="M${ax+r} ${ay} A${r} ${r} 0 0 1 ${ax+r*Math.cos(P)} ${ay+r*Math.sin(P)}" fill="none" stroke="var(--ink-3)" stroke-width="1"/>`;
-      g+=`<text x="${ax+(r+13)*Math.cos(P/2)}" y="${ay+(r+13)*Math.sin(P/2)+4}" font-size="12" font-family="var(--mono)" fill="var(--ink-2)">${n(E.profile)}°</text>`;
       // 태양
       let R=118;
       if(Math.cos(P)>0.02) R=Math.min(R,(ax-44)/Math.cos(P));
@@ -411,7 +450,7 @@
       g+=`<circle cx="${sx}" cy="${sy}" r="13" fill="var(--sun-2)"/>`;
       for(let i=0;i<8;i++){const a=i*Math.PI/4;
         g+=`<line x1="${sx+17*Math.cos(a)}" y1="${sy+17*Math.sin(a)}" x2="${sx+23*Math.cos(a)}" y2="${sy+23*Math.sin(a)}" stroke="var(--sun-2)" stroke-width="2" stroke-linecap="round"/>`;}
-      g+=`<text x="${sx}" y="${sy+40}" font-size="11.5" font-family="var(--mono)" fill="var(--ink-2)" text-anchor="middle">고도 ${n(sun.alt)}°</text>`;
+      g+=`<text x="${sx}" y="${sy+40}" font-size="12" fill="var(--ink-2)" text-anchor="middle">태양 고도 ${Math.round(sun.alt)}도</text>`;
     }
 
     // 치수선: 처마 내밀기
@@ -419,15 +458,20 @@
     g+=`<line x1="${X(-D)}" y1="${Y(dy)}" x2="${X(0)}" y2="${Y(dy)}" stroke="var(--ink-3)" stroke-width="1"/>`;
     g+=`<line x1="${X(-D)}" y1="${Y(dy)-5}" x2="${X(-D)}" y2="${Y(dy)+5}" stroke="var(--ink-3)"/>`;
     g+=`<line x1="${X(0)}" y1="${Y(dy)-5}" x2="${X(0)}" y2="${Y(dy)+5}" stroke="var(--ink-3)"/>`;
-    g+=`<text x="${(X(-D)+X(0))/2}" y="${Y(dy)-8}" font-size="12" font-family="var(--mono)" fill="var(--ink-2)" text-anchor="middle">내밀기 ${D}cm</text>`;
+    g+=`<text x="${(X(-D)+X(0))/2}" y="${Y(dy)-8}" font-size="12" fill="var(--ink-2)" text-anchor="middle">처마 길이 ${D}cm</text>`;
     // 치수선: 유입 깊이
     if(!E.night&&!E.behind&&E.frac>0){
       const far=Math.min(E.pen,roomD), yy=Y(0)+16;
       g+=`<line x1="${X(0)}" y1="${yy}" x2="${X(far)}" y2="${yy}" stroke="var(--ink-3)" stroke-width="1" marker-end="url(#ar)"/>`;
-      g+=`<text x="${X(0)+8}" y="${yy-6}" font-size="12" font-family="var(--mono)" fill="var(--ink-2)">유입 깊이 ${Math.round(E.pen)}cm</text>`;
+      g+=`<text x="${X(0)+8}" y="${yy-6}" font-size="12" fill="var(--ink-2)">햇빛이 방 안 ${Math.round(E.pen)}cm까지</text>`;
     }
-    g+=`<text x="18" y="${oy-8}" font-size="11" fill="var(--ink-3)" letter-spacing="2">실외</text>`;
-    g+=`<text x="${W-18}" y="${oy-8}" font-size="11" fill="var(--ink-3)" letter-spacing="2" text-anchor="end">실내</text>`;
+    g+=`<text x="18" y="${oy-8}" font-size="12" fill="var(--ink-3)">← 마당 (바깥)</text>`;
+    g+=`<text x="${W-18}" y="${oy-8}" font-size="12" fill="var(--ink-3)" text-anchor="end">방 안 →</text>`;
+    g+=`<text x="${X(wallT)+9}" y="${Y(s+wh/2)+4}" font-size="12" fill="var(--ink-2)">창문</text>`;
+    if(D>=45){
+      const lxc=-D*0.45, lyc=eaveH+(lxc+D)*roofRise+7;
+      g+=`<text x="${X(lxc)}" y="${Y(lyc)+4}" font-size="12" fill="#ffffff" text-anchor="middle">처마</text>`;
+    }
     return g;
   }
 
@@ -474,15 +518,12 @@
     HRS.forEach((h,i)=>{ if(h%2===1) return;
       g+=`<text x="${L-7}" y="${T+i*ch+ch/2+3.5}" font-size="10" font-family="var(--mono)" fill="var(--ink-3)" text-anchor="end">${h}시</text>`;});
     for(let m=0;m<12;m++)
-      g+=`<text x="${L+m*cw+cw/2}" y="${T+HRS.length*ch+14}" font-size="10" font-family="var(--mono)" fill="var(--ink-3)" text-anchor="middle">${m+1}</text>`;
-    g+=`<text x="${L+(W-L-Rp)/2}" y="${T+HRS.length*ch+30}" font-size="10.5" fill="var(--ink-3)" text-anchor="middle">월</text>`;
-    const lx=L, ly=H-16, sw=(W-L-Rp)/9;
-    const labels=['0','50','150','300','450','600+'];
-    for(let i=0;i<7;i++){
+      g+=`<text x="${L+m*cw+cw/2}" y="${T+HRS.length*ch+16}" font-size="10.5" fill="var(--ink-3)" text-anchor="middle">${m+1}월</text>`;
+    const lx=L, ly=H-16;
+    for(let i=0;i<7;i++)
       g+=`<rect x="${lx+i*26}" y="${ly-9}" width="25" height="10" fill="var(--h${i})"/>`;
-    }
-    labels.forEach((t,i)=>{ g+=`<text x="${lx+i*26}" y="${ly+12}" font-size="9.5" font-family="var(--mono)" fill="var(--ink-3)">${t}</text>`;});
-    g+=`<text x="${lx+7*26+8}" y="${ly}" font-size="10" fill="var(--ink-3)">W/m² · 창면 유입 일사</text>`;
+    g+=`<text x="${lx}" y="${ly+13}" font-size="10" fill="var(--ink-3)">햇빛이 적게</text>`;
+    g+=`<text x="${lx+7*26-1}" y="${ly+13}" font-size="10" fill="var(--ink-3)" text-anchor="end">많이 들어와요</text>`;
     return g;
   }
 
@@ -490,16 +531,14 @@
   function hhmm(h){const t=Math.round(h*60); return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
   function dateLabel(doy){
     const d=dateOf(doy), m=d.getMonth()+1, day=d.getDate();
-    const tag={172:'하지',355:'동지',80:'춘분',266:'추분'};
+    const tag={172:'여름 · 낮이 가장 긴 날',355:'겨울 · 낮이 가장 짧은 날',80:'봄',266:'가을'};
     let t='';
     for(const k in tag) if(Math.abs(doy-k)<=2) t=' · '+tag[k];
     return `${m}월 ${day}일${t}`;
   }
   const AZN=['북','북동','동','남동','남','남서','서','북서'];
-  function azLabel(a){
-    const i=Math.round(a/45)%8, d=wrap180(a-i*45);
-    return `${a}° · ${Math.abs(d)<3?'정':''}${AZN[i]}향`;
-  }
+  const azWord=a=>AZN[Math.round((((a%360)+360)%360)/45)%8];
+  function azLabel(a){ return `${azWord(a)}쪽 (${a}도)`; }
 
   /* ---------- 렌더 ---------- */
   let dayCache={key:'',v:0,v0:0};
@@ -512,29 +551,42 @@
     $('compass').innerHTML=compass(G,sun,E);
 
     const city=CITIES[S.cityIdx];
-    let st=`${dateLabel(G.doy)} ${hhmm(G.hour)} · ${city?city.n:'위도 '+G.lat.toFixed(1)+'°'} · ${azLabel(G.wallAz)}`;
-    if(E.night) st+=' · 일출 전/일몰 후';
-    else if(E.behind) st+=' · 태양이 벽 뒤편(직사광 없음)';
+    let st=`${city?city.n:'북위 '+G.lat.toFixed(1)+'도'} · ${dateLabel(G.doy)} ${hhmm(G.hour)} · 창문은 ${azWord(G.wallAz)}쪽`;
+    if(E.night) st+=' · 해가 없어요';
+    else if(E.behind) st+=' · 해가 집 뒤쪽에 있어요';
     $('stageState').textContent=st;
 
-    $('mAlt').innerHTML=E.night?'—':`${sun.alt.toFixed(1)}<small>°</small>`;
-    $('mAzi').textContent=E.night?'수평선 아래':`방위 ${sun.az.toFixed(0)}° · 진태양시 ${hhmm(clamp(sun.lst,0,23.99))}`;
-    $('mProf').innerHTML=(E.night||E.behind)?'—':`${E.profile.toFixed(1)}<small>°</small>`;
     const shadePct=(E.night||E.behind)?100:Math.round((1-E.frac)*100);
+    const litPct=100-shadePct;
+
+    $('mAlt').innerHTML=E.night?'—':`${Math.round(sun.alt)}<small>도</small>`;
+    $('mAzi').textContent=E.night?'해가 하늘에 없어요':`해는 ${azWord(sun.az)}쪽 하늘에 있어요`;
     $('mShade').innerHTML=`${shadePct}<small>%</small>`;
-    $('mShadeN').textContent=(E.night||E.behind)?'직사광 없음':(E.frac>=0.999?'창 전체에 직사광':`그림자 경계 바닥에서 ${Math.round(clamp(E.shadowLine,G.s,G.s+G.wh))}cm`);
+    $('mShadeN').textContent=E.night?'밤에는 그늘도 생기지 않아요'
+      :(E.behind?'해가 반대편에 있어 그늘이에요'
+      :(shadePct===0?'창문 전체에 햇빛이 들어요'
+      :(shadePct===100?'처마가 창문을 모두 가렸어요':`나머지 ${litPct}%에 햇빛이 들어요`)));
     $('mPen').innerHTML=(E.frac>0)?`${Math.round(E.pen)}<small>cm</small>`:'0<small>cm</small>';
-    $('mIrr').innerHTML=`${Math.round(E.total)}<small>W/m²</small>`;
-    $('mIrrN').textContent=`직달 ${Math.round(E.direct)} · 산란 ${Math.round(E.diffuse)} · 반사 ${Math.round(E.refl)}`;
+    const score=Math.min(100,Math.round(E.total/8));
+    $('mIrr').innerHTML=`${score}<small>점</small>`;
+    $('mBar').style.width=score+'%';
+    $('mIrrN').textContent=`100점에 가까울수록 센 햇빛 (1㎡에 ${Math.round(E.total)}W)`;
+
+    let sm;
+    if(E.night) sm='지금은 해가 하늘에 없어요. 아래에서 <b>시각</b>을 낮으로 옮겨 보세요.';
+    else if(E.behind) sm=`해가 집 뒤쪽에 있어서 창문으로 햇빛이 곧바로 들어오지 않아요.`;
+    else if(litPct<=0) sm='처마가 창문을 <b>모두</b> 가렸어요. 방 안으로 들어오는 햇빛이 없어요.';
+    else sm=`창문의 <b>${litPct}%</b>에 햇빛이 들고, 방 안 <b>${Math.round(E.pen)}cm</b>까지 햇빛이 들어와요.`;
+    $('summary').innerHTML=sm;
 
     if(full!==false){
       const key=[G.lat,G.lon,G.doy,G.wallAz,G.D,G.g,G.wh,G.s].join('|');
       if(dayCache.key!==key){
         dayCache={key, v:dayTotal(G,G.doy,true), v0:dayTotal(G,G.doy,false)};
       }
-      const cut=dayCache.v0>0?Math.round((1-dayCache.v/dayCache.v0)*100):0;
-      $('mDay').innerHTML=`${(dayCache.v/1000).toFixed(2)}<small>kWh/m²</small>`;
-      $('mDayN').textContent=`처마 없을 때 대비 ${cut>=0?'−':'+'}${Math.abs(cut)}%`;
+      const cut=dayCache.v0>0?Math.max(0,Math.round((1-dayCache.v/dayCache.v0)*100)):0;
+      $('mDay').innerHTML=`${cut}<small>%</small>`;
+      $('mDayN').textContent=cut>0?'처마가 없다면 이만큼 더 들어와요':'이 날은 처마가 거의 가리지 않아요';
       $('heat').innerHTML=heatmap(G);
       diagnose(G);
     }
@@ -554,17 +606,21 @@
     const items=[];
     const shadeAt=p=>{ if(!p) return null; const sl=eaveH-G.D*p.tanP; return 1-(clamp(sl,G.s,G.s+G.wh)-G.s)/G.wh; };
     const sS=shadeAt(su), sW=shadeAt(wi);
-    if(sS===null) items.push({c:'',t:'<b>하지 남중</b> 이 방위에서는 정오에 직사광이 들지 않습니다.',q:'—'});
-    else items.push({c:sS>=0.9?'ok':(sS>=0.6?'warn':'bad'), t:`<b>하지 정오 차폐</b> 여름 한낮 창면을 ${Math.round(sS*100)}% 가립니다.`, q:`${Math.round(sS*100)}%`});
-    if(sW===null) items.push({c:'',t:'<b>동지 남중</b> 이 방위에서는 정오에 직사광이 들지 않습니다.',q:'—'});
-    else items.push({c:(1-sW)>=0.9?'ok':((1-sW)>=0.6?'warn':'bad'), t:`<b>동지 정오 채광</b> 겨울 한낮 창면의 ${Math.round((1-sW)*100)}%에 햇빛이 듭니다.`, q:`${Math.round((1-sW)*100)}%`});
+    if(sS===null) items.push({c:'',t:'<b>여름 한낮</b> 이 방향 창문에는 낮 12시쯤 햇빛이 곧바로 들지 않아요.',q:'—'});
+    else items.push({c:sS>=0.9?'ok':(sS>=0.6?'warn':'bad'), t:`<b>여름 한낮</b> 처마가 창문의 ${Math.round(sS*100)}%를 가려 줘요.`, q:`${Math.round(sS*100)}%`});
+    if(sW===null) items.push({c:'',t:'<b>겨울 한낮</b> 이 방향 창문에는 낮 12시쯤 햇빛이 곧바로 들지 않아요.',q:'—'});
+    else items.push({c:(1-sW)>=0.9?'ok':((1-sW)>=0.6?'warn':'bad'), t:`<b>겨울 한낮</b> 창문의 ${Math.round((1-sW)*100)}%에 햇빛이 들어와요.`, q:`${Math.round((1-sW)*100)}%`});
     if(wi){
       const sl=eaveH-G.D*wi.tanP, top=clamp(sl,G.s,G.s+G.wh);
       const pen=top>G.s?top/wi.tanP:0;
-      items.push({c:pen>=200?'ok':(pen>=100?'warn':'bad'), t:`<b>동지 햇빛 유입 깊이</b> 겨울 정오에 방 안 ${Math.round(pen)}cm까지 햇빛이 들어옵니다.`, q:`${Math.round(pen)}cm`});
+      items.push({c:pen>=200?'ok':(pen>=100?'warn':'bad'), t:`<b>겨울 햇빛</b> 방 안 ${Math.round(pen)}cm까지 들어와 방을 데워 줘요.`, q:`${Math.round(pen)}cm`});
     }
     const sum=dayTotal(G,172,true), win=dayTotal(G,355,true);
-    items.push({c:win>sum?'ok':'warn', t:`<b>계절 균형</b> 하루 유입량이 하지 ${(sum/1000).toFixed(2)} · 동지 ${(win/1000).toFixed(2)} kWh/m²입니다. 겨울이 더 많아야 잘 된 처마입니다.`, q:`${(win/Math.max(sum,1)).toFixed(2)}배`});
+    const ratio=win/Math.max(sum,1);
+    items.push({c:ratio>=1?'ok':'warn',
+      t:ratio>=1?`<b>여름과 겨울 비교</b> 겨울에 여름보다 ${ratio.toFixed(1)}배 많은 햇빛이 들어와요. 처마가 제 몫을 하고 있어요.`
+               :`<b>여름과 겨울 비교</b> 겨울보다 여름에 햇빛이 더 많이 들어와요. 처마를 조금 더 길게 해 보세요.`,
+      q:`${ratio.toFixed(1)}배`});
     $('diag').innerHTML=items.map(i=>`<div class="d ${i.c}"><i></i><span class="t">${i.t}</span><span class="q">${i.q}</span></div>`).join('');
 
     let rec='';
@@ -573,13 +629,13 @@
       const dMax=(eaveH-(G.s+0.9*G.wh))/wi.tanP;
       if(dMax>=dMin&&dMax>0){
         const lo=Math.max(0,Math.round(dMin/5)*5), hi=Math.round(dMax/5)*5;
-        rec=`<p><b>권장 내밀기 ${lo}~${hi}cm</b> — 하지 정오 90% 이상 차폐, 동지 정오 90% 이상 채광을 함께 만족하는 범위입니다.</p>
-             <div class="chips"><button type="button" id="applyD" data-d="${Math.round((lo+hi)/2/5)*5}">${Math.round((lo+hi)/2/5)*5}cm 적용</button></div>`;
+        rec=`<p><b>알맞은 처마 길이는 ${lo}~${hi}cm</b> — 여름 햇빛은 거의 다 가리면서 겨울 햇빛은 거의 다 들여보내는 길이예요.</p>
+             <div class="chips"><button type="button" id="applyD" data-d="${Math.round((lo+hi)/2/5)*5}">${Math.round((lo+hi)/2/5)*5}cm로 맞추기</button></div>`;
       } else {
-        rec=`<p><b>두 조건을 동시에 만족하는 내밀기가 없습니다.</b> 여름을 가리려면 ${Math.round(dMin)}cm 이상, 겨울을 들이려면 ${Math.round(Math.max(dMax,0))}cm 이하가 필요합니다. 창 상단~처마 밑 높이를 키우거나 창을 낮추면 범위가 생깁니다.</p>`;
+        rec=`<p><b>두 가지를 한꺼번에 만족하는 길이가 없어요.</b> 여름을 가리려면 ${Math.round(dMin)}cm보다 길어야 하고, 겨울 햇빛을 들이려면 ${Math.round(Math.max(dMax,0))}cm보다 짧아야 하거든요. <b>창문 위에서 처마까지</b>를 더 높이거나 창문을 조금 낮춰 보세요.</p>`;
       }
     } else {
-      rec='<p>남향에서 벗어난 방위라 남중 기준 권장값을 계산하지 않았습니다. 동·서향 창은 처마보다 세로 차양이나 수직 루버가 효과적입니다.</p>';
+      rec='<p>남쪽에서 많이 벗어난 창문이라 알맞은 길이를 정하기 어려워요. 동쪽·서쪽 창문은 해가 낮게 뜬 채로 비추기 때문에 처마만으로는 가리기 힘들답니다.</p>';
     }
     $('rec').innerHTML=rec;
     const ap=$('applyD');
@@ -588,7 +644,7 @@
 
   /* ---------- 입력 ---------- */
   function syncLabels(){
-    $('vLat').textContent=S.lat.toFixed(1)+'°N';
+    $('vLat').textContent='북위 '+S.lat.toFixed(1)+'도';
     $('vDoy').textContent=dateLabel(S.doy);
     $('vHour').textContent=hhmm(S.hour);
     $('vAz').textContent=azLabel(S.wallAz);
@@ -598,8 +654,8 @@
     $('vS').textContent=S.s+'cm';
   }
   const sel=$('city');
-  CITIES.forEach((c,i)=>{const o=document.createElement('option'); o.value=i; o.textContent=`${c.n} (북위 ${c.lat.toFixed(1)}°)`; sel.appendChild(o);});
-  const custom=document.createElement('option'); custom.value='-1'; custom.textContent='직접 입력'; sel.appendChild(custom);
+  CITIES.forEach((c,i)=>{const o=document.createElement('option'); o.value=i; o.textContent=c.n; sel.appendChild(o);});
+  const custom=document.createElement('option'); custom.value='-1'; custom.textContent='직접 정하기'; sel.appendChild(custom);
   sel.value='0';
   sel.addEventListener('change',()=>{
     const i=+sel.value; S.cityIdx=i;
@@ -642,7 +698,7 @@
   const heat=$('heat');
   heat.addEventListener('mousemove',e=>{
     const c=e.target.closest('rect.cell'); if(!c) return;
-    $('heatRead').textContent=`${+c.dataset.m+1}월 15일 ${c.dataset.h}:00 — 창면 유입 ${c.dataset.v} W/m²`;
+    $('heatRead').textContent=`${+c.dataset.m+1}월 ${c.dataset.h}시 — 햇빛 세기 ${Math.min(100,Math.round(+c.dataset.v/8))}점`;
   });
   heat.addEventListener('click',e=>{
     const c=e.target.closest('rect.cell'); if(!c) return;
@@ -650,6 +706,7 @@
     $('doy').value=S.doy; $('hour').value=S.hour; syncLabels(); render();
   });
 
+  S.doy=doyOf(new Date());
   try{
     const saved=JSON.parse(localStorage.getItem('cheoma')||'null');
     if(saved&&typeof saved==='object') Object.keys(S).forEach(k=>{if(typeof saved[k]==='number') S[k]=saved[k];});
